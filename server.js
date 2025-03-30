@@ -1,10 +1,8 @@
-const http = require('http');
+// const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const publicDir = path.join(__dirname, 'public');
-
-const server = http.createServer((req, res) => {
+module.exports = async (req, res) => {
     let filePath = '';
     let contentType = 'text/html; charset=utf-8';
 
@@ -33,9 +31,9 @@ const server = http.createServer((req, res) => {
             res.end(data);
         }
     });
-});
+};
 
-const PORT = 3000;
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}/`);
-});
+// const PORT = 3000;
+// server.listen(PORT, () => {
+//     console.log(`Server running at http://localhost:${PORT}/`);
+// });
