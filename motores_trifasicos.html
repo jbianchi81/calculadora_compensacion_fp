@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Calculadora de compensación de potencia</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container">
+            <h1>Cálculo de Motores Trifásicos</h1>
+            <form id="formulario_calculo_compensacion">
+                <div class="form-group">
+                    <label for="potencia_en_eje">Potencia en el eje</label>
+                    <select name="unidades_potencia">
+                        <option value="HP">HP</option>
+                        <option value="KW">KW</option>
+                    </select>
+                    <input type="number" name="potencia_en_eje" id="potencia_en_eje" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="tension_nominal">Tensión nominal [V]</label>
+                    <input type="number" name="tension_nominal" id="tension_nominal" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="corriente_nominal">Corriente nominal del motor [A]</label>
+                    <input type="number" name="corriente_nominal" id="corriente_nominal" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="factor_potencia_deseado">Factor de potencia deseado</label>
+                    <input type="number" name="factor_potencia_deseado" id="factor_potencia_deseado" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="frecuencia">Frecuencia [Hz]</label>
+                    <input type="number" name="frecuencia" id="frecuencia" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="factor_potencia_actual">Factor de potencia actual</label>
+                    <input type="number" name="factor_potencia_actual" id="factor_potencia_actual" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label></label>
+                    <button type="button" onclick="reporte()">Reporte</button>
+                </div>
+                <label for="capacitor">Capacitor p/cos&phi; deseado [KVAr]:</label>
+                <input disabled id="capacitor" name="capacitor">
+                <div class="form-group">
+                    <button type="button" id="simular" onclick="simular()">Simular</button>
+                    <button type="button" id="calcular" onclick="calcular()">Calcular</button>
+                </div>
+            </form>
+            <a href="compensacion_motores">Atrás</a>
+        </div>
+    </body>
+    <script>
+        function reporte() {
+            const form = document.getElementById('formulario_calculo_compensacion');
+            const formData = new FormData(form);
+            const formObject = {};
+
+            formData.forEach((value, key) => {
+                formObject[key] = value;
+            });
+            alert(JSON.stringify(formObject,null,2));
+        }
+    </script>
+</html>
