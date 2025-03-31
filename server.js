@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = async (req, res) => {
+    res.setHeader('Set-Cookie', 'cookie_name=cookie_value; SameSite=None; Secure; Path=/; Max-Age=3600');
     let filePath = '';
     let contentType = 'text/html; charset=utf-8';
 
@@ -14,6 +15,9 @@ module.exports = async (req, res) => {
         filePath = path.join(__dirname, 'compensacion_general.html');
     } else if (req.url === '/motores_trifasicos') {
         filePath = path.join(__dirname, 'motores_trifasicos.html');
+    } else if (req.url === '/script.js') {
+        filePath = path.join(__dirname, '/public/script.js');
+        contentType = 'application/javascript; charset=utf-8'
     } else if (req.url === '/style.css') {
         filePath = path.join(__dirname, '/public/style.css');
         contentType = 'text/css; charset=utf-8'
