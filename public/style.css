@@ -13,9 +13,10 @@
 }
 .form-group input, .form-group select {
     flex: 1; /* Inputs take remaining space */
+    max-width: 100px;
 }
 .container {
-    max-width: 480px;
+    max-width: 1050px;
     margin: auto;
 }
 
@@ -82,4 +83,24 @@ nav {
     margin-top: 20px;
     padding: 20px;
     border: 1px solid #ccc;
+}
+
+.block_container {
+    display: flex;
+    flex-wrap: wrap;
+    /* gap: 10px; */
+    justify-content: center; /* Centers blocks when wrapping */
+    /* padding: 10px; */
+}
+
+.block {
+    width: 30%; /* Each block takes 30% of the container width */
+    min-width: 350px; /* Prevents blocks from getting too small */
+    /* height: 150px; */
+    /* background: lightblue; */
+    /* display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem; */
+    /* border: 2px solid navy; */
 }

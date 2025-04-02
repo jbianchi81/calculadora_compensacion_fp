@@ -177,20 +177,30 @@ function loadContent(contentId) {
     document.getElementById("content").innerHTML = `
         <div class="container">
             <h2>${form.title}</h2>
-            <form id="formulario_calculo_compensacion">
-                <input name="formulario" hidden value="${contentId}">
-                ${form.fields.map(field=>renderFormGroup(field)).join("\n")}
-                <div class="form-group">
-                    <label></label>
-                    <button type="button" onclick="reporte()">Reporte</button>
+            <div class="block_container">
+                <div class="block">
+                    <form id="formulario_calculo_compensacion">
+                        <input name="formulario" hidden value="${contentId}">
+                        ${form.fields.map(field=>renderFormGroup(field)).join("\n")}
+                        <div class="form-group">
+                            <label></label>
+                            <button type="button" onclick="generaReporte()">Reporte</button>
+                        </div>
+                        <label for="capacitor">${form.result_label}</label>
+                        <input disabled name="capacitor">
+                        <div class="form-group">
+                            <button type="button" id="simular" onclick="simular()">Simular</button>
+                            <button type="button" id="calcular" onclick="calcular()">Calcular</button>
+                        </div>
+                    </form>
                 </div>
-                <label for="capacitor">${form.result_label}</label>
-                <input disabled name="capacitor">
-                <div class="form-group">
-                    <button type="button" id="simular" onclick="simular()">Simular</button>
-                    <button type="button" id="calcular" onclick="calcular()">Calcular</button>
+                <div class=block>
+                    <form id="formulario_reporte"></form>
                 </div>
-            </form>
+                <div class=block>
+                    <form id="formulario_resultados"></form>
+                </div>
+            </div>
         </div>
     `
 }
@@ -219,11 +229,19 @@ function renderField(field) {
         if(field.placeholder) {
             attrs = `${attrs} placeholder="${field.placeholder}"`
         }
-        return `<input type="number" name="${field.name}" ${attrs} required>`
+        if(field.value) {
+            attrs = `${attrs} value="${field.value}"`
+        }
+        if(field.disabled) {
+            attrs = `${attrs} disabled`
+        } else {
+            attrs = `${attrs} required`
+        }
+        return `<input type="number" name="${field.name}" ${attrs}>`
     }
 }
 
-function reporte() {
+function generaReporte() {
     const form = document.getElementById('formulario_calculo_compensacion');
     const formData = new FormData(form);
     const formObject = {};
@@ -231,8 +249,46 @@ function reporte() {
     formData.forEach((value, key) => {
         formObject[key] = value;
     });
-    alert(JSON.stringify(formObject,null,2));
+    // alert(JSON.stringify(formObject,null,2));
+    const reporte = calculaReporte(formObject)
+    document.getElementById('formulario_reporte').innerHTML =`
+        ${Object.entries(reporte).map(([key, value]) => {
+            var field = reporte_fields[key]
+            return `<div class="form-group">
+            <label for="${key}">${field.label}</label>
+            ${renderField({"name":key,"value":value,"data_type": "decimal", "disabled":true})}
+        </div>`;
+        }).join("\n")}    
+    `
 }
+
+const reporte_fields = {
+    "potencia_en_eje": {
+        "label": "Potencia en el eje [KW]"
+    },
+    "s_sin_compensar": {
+        "label": "S sin compensar [kVA]"
+    },
+    "q_sin_compensar": {
+        "label": "Q sin compensar [kVA]"
+    },
+    "potencia_circuito": {
+        "label": "Potencia del circuito [kW]"
+    }
+}
+
+function calculaReporte(params) {
+    if(params.formulario == "motores_trifasicos") {
+        return {
+            "potencia_en_eje": Math.round(Math.random()*1000000)/10000,
+            "s_sin_compensar": Math.round(Math.random()*10000)/100,
+            "q_sin_compensar": Math.round(Math.random()*10000)/100,
+            "potencia_circuito": Math.round(Math.random()*10000)/100
+        }
+    }
+}
+
+
 
 
     // document.getElementById("content").innerHTML = `
