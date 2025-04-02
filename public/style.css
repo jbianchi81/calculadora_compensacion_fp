@@ -104,3 +104,13 @@ nav {
     font-size: 1.5rem; */
     /* border: 2px solid navy; */
 }
+
+.report input[type="number"]::-webkit-outer-spin-button,
+.report input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.report input[type="number"] {
+    -moz-appearance: textfield;
+}

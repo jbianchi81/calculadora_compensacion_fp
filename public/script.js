@@ -71,7 +71,10 @@ const form_groups = {
                 "text": "Calcular en Potencia [KVAr]"
 
             }
-        ]
+        ],
+        "id": "modo_de_calculo",
+        "value": "potencia",
+        "style": "max-width: 155px;"
     },
     "potencia_kw": {
         "type": "input",
@@ -189,8 +192,8 @@ function loadContent(contentId) {
                         <label for="capacitor">${form.result_label}</label>
                         <input disabled name="capacitor">
                         <div class="form-group">
-                            <button type="button" id="simular" onclick="simular()">Simular</button>
-                            <button type="button" id="calcular" onclick="calcular()">Calcular</button>
+                            <button type="button" id="simular" onclick="simularCapacitor()" disabled>Simular</button>
+                            <button type="button" id="calcular" onclick="calcularCapacitor()" disabled>Calcular</button>
                         </div>
                     </form>
                 </div>
@@ -221,8 +224,19 @@ function renderFormGroup(form_group) {
 
 function renderField(field) {
     if(field.type=="select") {
-        return `<select name="${field.name}">
-            ${field.options.map(option=>`<option value="${option.value}">${option.text}</option>`)}
+        var attrs = ""
+        if (field.id) {
+            attrs = `${attrs} id="${field.id}"`
+
+        }
+        if(field.style) {
+            attrs = `${attrs} style="${field.style}"`
+        }
+        return `<select name="${field.name}" ${attrs}>
+            ${field.options.map(option=> {
+                const selected = (field.value && field.value == option.value) ? " selected" : ""
+                return `<option value="${option.value}"${selected}>${option.text}</option>`
+            })}
         </select>`
     } else {
         var attrs = (field.data_type=="decimal") ? `min="0" step="0.01"` : `min="0"`
@@ -231,6 +245,9 @@ function renderField(field) {
         }
         if(field.value) {
             attrs = `${attrs} value="${field.value}"`
+        }
+        if(field.id) {
+            attrs = `${attrs} id="${field.id}"`
         }
         if(field.disabled) {
             attrs = `${attrs} disabled`
@@ -254,12 +271,13 @@ function generaReporte() {
     document.getElementById('formulario_reporte').innerHTML =`
         ${Object.entries(reporte).map(([key, value]) => {
             var field = reporte_fields[key]
-            return `<div class="form-group">
+            return `<div class="form-group report">
             <label for="${key}">${field.label}</label>
             ${renderField({"name":key,"value":value,"data_type": "decimal", "disabled":true})}
         </div>`;
         }).join("\n")}    
     `
+    document.getElementById('calcular').disabled = false
 }
 
 const reporte_fields = {
@@ -270,7 +288,7 @@ const reporte_fields = {
         "label": "S sin compensar [kVA]"
     },
     "q_sin_compensar": {
-        "label": "Q sin compensar [kVA]"
+        "label": "Q sin compensar [kVAr]"
     },
     "potencia_circuito": {
         "label": "Potencia del circuito [kW]"
@@ -280,10 +298,14 @@ const reporte_fields = {
     },
     "fp_actual": {
         "label": "Factor de potencia Actual"
+    },
+    "corriente_circuito": {
+        "label": "Corriente del circuito [A]"
     }
 }
 
 function calculaReporte(params) {
+    // TODO
     if(params.formulario == "motores_trifasicos") {
         return {
             "potencia_en_eje": Math.round(Math.random()*1000000)/10000,
@@ -298,11 +320,50 @@ function calculaReporte(params) {
             "q_sin_compensar": Math.round(Math.random()*10000)/100,
             "fp_actual": Math.round(Math.random()*100)/100
         }
+    } else if(params.formulario == "trifasico_general_fp_actual") {
+        return {
+            "s_sin_compensar": Math.round(Math.random()*10000)/100,
+            "q_sin_compensar": Math.round(Math.random()*10000)/100,
+            "potencia_circuito": Math.round(Math.random()*10000)/100
+        }
+    } else if(params.formulario == "monofasico_general") {
+        return {
+            "s_sin_compensar": Math.round(Math.random()*10000)/100,
+            "q_sin_compensar": Math.round(Math.random()*10000)/100,
+            "corriente_circuito": Math.round(Math.random()*10000)/100
+        }
+    } else if(params.formulario == "trifasico_general_corriente") {
+        return {
+            "s_sin_compensar": Math.round(Math.random()*10000)/100,
+            "q_sin_compensar": Math.round(Math.random()*10000)/100,
+            "fp_actual": Math.round(Math.random()*100)/100
+        }
+    } else {
+        throw new Error("Invalid params.formulario: not found")
     }
 }
 
+function calculaCapacitor(params, modo_de_calculo) {
+    // TODO
+    return Math.round(Math.random()*100000)/100
+}
 
+function calcularCapacitor() {
+    const form = document.getElementById('formulario_reporte');
+    const formData = new FormData(form);
+    const formObject = {};
 
+    formData.forEach((value, key) => {
+        formObject[key] = value;
+    });
+    // alert(JSON.stringify(formObject,null,2));
+    const modo_de_calculo_select = document.getElementById("modo_de_calculo")
+    const modo_de_calculo = (modo_de_calculo_select) ? modo_de_calculo_select.value : "capacidad"
+
+    document.querySelector('label[for=capacitor]').innerHTML = (modo_de_calculo == "capacidad") ? "Capacitor recomendado [&mu;F]:" : "Potencia recomendada [KVAr]"
+    document.querySelector('input[name=capacitor]').value = calculaCapacitor(formObject, modo_de_calculo)
+    document.getElementById("simular").disabled = false
+}
 
     // document.getElementById("content").innerHTML = `
     //     <div class="container">
@@ -344,7 +405,7 @@ function calculaReporte(params) {
     //             <input disabled id="capacitor" name="capacitor">
     //             <div class="form-group">
     //                 <button type="button" id="simular" onclick="simular()">Simular</button>
-    //                 <button type="button" id="calcular" onclick="calcular()">Calcular</button>
+    //                 <button type="button" id="calcular" onclick="calcularCapacitor()">Calcular</button>
     //             </div>
     //         </form>
     //     </div>
