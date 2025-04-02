@@ -201,7 +201,7 @@ function loadContent(contentId) {
                     <form id="formulario_reporte"></form>
                 </div>
                 <div class=block>
-                    <form id="formulario_resultados"></form>
+                    <form id="formulario_capacitor"></form>
                 </div>
             </div>
         </div>
@@ -258,16 +258,22 @@ function renderField(field) {
     }
 }
 
-function generaReporte() {
-    const form = document.getElementById('formulario_calculo_compensacion');
+function parseFormData(element_id) {
+    const form = document.getElementById(element_id);
     const formData = new FormData(form);
-    const formObject = {};
+    const params = {};
 
     formData.forEach((value, key) => {
-        formObject[key] = value;
+        params[key] = value;
     });
+
+    return params
+}
+
+function generaReporte() {
+    const params = parseFormData('formulario_calculo_compensacion')
     // alert(JSON.stringify(formObject,null,2));
-    const reporte = calculaReporte(formObject)
+    const reporte = calculaReporte(params)
     document.getElementById('formulario_reporte').innerHTML =`
         ${Object.entries(reporte).map(([key, value]) => {
             var field = reporte_fields[key]
@@ -303,6 +309,60 @@ const reporte_fields = {
         "label": "Corriente del circuito [A]"
     }
 }
+
+
+function calcularCapacitor() {
+    const params = parseFormData('formulario_calculo_compensacion')
+    const params_reporte = parseFormData('formulario_reporte')
+    const modo_de_calculo = (params.modo_de_calculo) ? params.modo_de_calculo : "capacidad"
+
+    document.querySelector('label[for=capacitor]').innerHTML = (modo_de_calculo == "capacidad") ? "Capacitor recomendado [&mu;F]:" : "Potencia recomendada [KVAr]"
+    document.querySelector('input[name=capacitor]').value = calculaCapacitor(params,params_reporte, modo_de_calculo)
+    document.getElementById("simular").disabled = false
+}
+
+const capacitor_fields = {
+    "corriente_capacitor": {
+        "label": "Corriente en el Capacitor [A]"
+    },
+    "q_compensada": {
+        "label": "Q compensada [KVAr]"
+    },
+    "s_compensada": {
+        "label": "S compensada [KVAr]"
+    },
+    "corriente_compensada": {
+        "label": "Corriente compensada [A]"
+    },
+    "fp_compensado": {
+        "label": "Factor de potencia compensado"
+    },
+    "q_capacitiva_capacitor": {
+        "label": "Q capacitiva del capacitor [VAr]"
+    }
+}
+
+function simularCapacitor() {
+    const params = parseFormData('formulario_calculo_compensacion')
+    const params_reporte = parseFormData('formulario_reporte')
+    const valor_capacitor = parseFloat(document.querySelector(`input[name="capacitor"]`).value)
+    
+    const params_capacitor = simulaCapacitor(params, params_reporte, valor_capacitor)
+
+    document.getElementById('formulario_capacitor').innerHTML =`
+        ${Object.entries(params_capacitor).map(([key, value]) => {
+            var field = capacitor_fields[key]
+            return `<div class="form-group report">
+                <label for="${key}">${field.label}</label>
+                ${renderField({"name":key,"value":value,"data_type": "decimal", "disabled":true})}
+            </div>`;
+        }).join("\n")}
+        <div class="form-group report">
+            <button type="button" action="informe()">Informe</button>
+        </div>`    
+}
+
+// funciones eléctricas
 
 function calculaReporte(params) {
     // TODO
@@ -343,70 +403,56 @@ function calculaReporte(params) {
     }
 }
 
-function calculaCapacitor(params, modo_de_calculo) {
+function calculaCapacitor(params, params_reporte, modo_de_calculo) {
     // TODO
     return Math.round(Math.random()*100000)/100
 }
 
-function calcularCapacitor() {
-    const form = document.getElementById('formulario_reporte');
-    const formData = new FormData(form);
-    const formObject = {};
-
-    formData.forEach((value, key) => {
-        formObject[key] = value;
-    });
-    // alert(JSON.stringify(formObject,null,2));
-    const modo_de_calculo_select = document.getElementById("modo_de_calculo")
-    const modo_de_calculo = (modo_de_calculo_select) ? modo_de_calculo_select.value : "capacidad"
-
-    document.querySelector('label[for=capacitor]').innerHTML = (modo_de_calculo == "capacidad") ? "Capacitor recomendado [&mu;F]:" : "Potencia recomendada [KVAr]"
-    document.querySelector('input[name=capacitor]').value = calculaCapacitor(formObject, modo_de_calculo)
-    document.getElementById("simular").disabled = false
+function simulaCapacitor(params, params_reporte, valor_capacitor) {
+    // TODO
+    if(params.formulario=="motores_trifasicos") {
+        return {
+            "corriente_capacitor": Math.round(Math.random()*10000)/100,
+            "q_compensada": Math.round(Math.random()*10000)/100,
+            "s_compensada": Math.round(Math.random()*10000)/100,
+            "corriente_compensada": Math.round(Math.random()*10000)/100,
+            "fp_compensado": Math.round(Math.random()*100)/100
+        }
+    } else if(params.formulario=="motores_monofasicos") {
+        return {
+            "q_capacitiva_capacitor": Math.round(Math.random()*10000)/100, 
+            "corriente_capacitor": Math.round(Math.random()*10000)/100,
+            "q_compensada": Math.round(Math.random()*10000)/100,
+            "s_compensada": Math.round(Math.random()*10000)/100,
+            "corriente_compensada": Math.round(Math.random()*10000)/100,
+            "fp_compensado": Math.round(Math.random()*100)/100
+        }
+    } else if(params.formulario=="trifasico_general_fp_actual") {
+        return {
+            "corriente_capacitor": Math.round(Math.random()*10000)/100,
+            "q_compensada": Math.round(Math.random()*10000)/100,
+            "s_compensada": Math.round(Math.random()*10000)/100,
+            "corriente_compensada": Math.round(Math.random()*10000)/100,
+            "fp_compensado": Math.round(Math.random()*100)/100
+        }
+    } else if(params.formulario=="monofasico_general") {
+        return {
+            "q_capacitiva_capacitor": Math.round(Math.random()*10000)/100, 
+            "corriente_capacitor": Math.round(Math.random()*10000)/100,
+            "q_compensada": Math.round(Math.random()*10000)/100,
+            "s_compensada": Math.round(Math.random()*10000)/100,
+            "corriente_compensada": Math.round(Math.random()*10000)/100,
+            "fp_compensado": Math.round(Math.random()*100)/100
+        }
+    } else if(params.formulario=="trifasico_general_corriente") {
+        return {
+            "corriente_capacitor": Math.round(Math.random()*10000)/100,
+            "q_compensada": Math.round(Math.random()*10000)/100,
+            "s_compensada": Math.round(Math.random()*10000)/100,
+            "corriente_compensada": Math.round(Math.random()*10000)/100,
+            "fp_compensado": Math.round(Math.random()*100)/100
+        }
+    } else {
+        throw new Error("Invalid params.formulario: not found")
+    }
 }
-
-    // document.getElementById("content").innerHTML = `
-    //     <div class="container">
-    //         <h2>Cálculo de Motores Trifásicos</h2>
-    //         <form id="formulario_calculo_compensacion">
-    //             <div class="form-group">
-    //                 <label for="potencia_en_eje">Potencia en el eje</label>
-    //                 <select name="unidades_potencia">
-    //                     <option value="HP">HP</option>
-    //                     <option value="KW">KW</option>
-    //                 </select>
-    //                 <input type="number" name="potencia_en_eje" min="0" step="0.01" required>
-    //             </div>
-    //             <div class="form-group">
-    //                 <label for="tension_nominal">Tensión nominal [V]</label>
-    //                 <input type="number" name="tension_nominal" min="0" step="0.01" required>
-    //             </div>
-    //             <div class="form-group">
-    //                 <label for="corriente_nominal">Corriente nominal del motor [A]</label>
-    //                 <input type="number" name="corriente_nominal" min="0" step="0.01" required>
-    //             </div>
-    //             <div class="form-group">
-    //                 <label for="factor_potencia_deseado">Factor de potencia deseado</label>
-    //                 <input type="number" name="factor_potencia_deseado" min="0" step="0.01" required>
-    //             </div>
-    //             <div class="form-group">
-    //                 <label for="frecuencia">Frecuencia [Hz]</label>
-    //                 <input type="number" name="frecuencia" min="0" required>
-    //             </div>
-    //             <div class="form-group">
-    //                 <label for="factor_potencia_actual">Factor de potencia actual</label>
-    //                 <input type="number" name="factor_potencia_actual" min="0" step="0.01" required>
-    //             </div>
-    //             <div class="form-group">
-    //                 <label></label>
-    //                 <button type="button" onclick="reporte()">Reporte</button>
-    //             </div>
-    //             <label for="capacitor">Capacitor p/cos&phi; deseado [KVAr]:</label>
-    //             <input disabled id="capacitor" name="capacitor">
-    //             <div class="form-group">
-    //                 <button type="button" id="simular" onclick="simular()">Simular</button>
-    //                 <button type="button" id="calcular" onclick="calcularCapacitor()">Calcular</button>
-    //             </div>
-    //         </form>
-    //     </div>
-    // `;
