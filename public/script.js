@@ -274,6 +274,12 @@ const reporte_fields = {
     },
     "potencia_circuito": {
         "label": "Potencia del circuito [kW]"
+    },
+    "potencia_en_el_eje_w": {
+        "label": "Potencia en el eje [W]"
+    },
+    "fp_actual": {
+        "label": "Factor de potencia Actual"
     }
 }
 
@@ -284,6 +290,13 @@ function calculaReporte(params) {
             "s_sin_compensar": Math.round(Math.random()*10000)/100,
             "q_sin_compensar": Math.round(Math.random()*10000)/100,
             "potencia_circuito": Math.round(Math.random()*10000)/100
+        }
+    } else if(params.formulario == "motores_monofasicos") {
+        return {
+            "potencia_en_eje_w": Math.round(Math.random()*1000000)/10000,
+            "s_sin_compensar": Math.round(Math.random()*10000)/100,
+            "q_sin_compensar": Math.round(Math.random()*10000)/100,
+            "fp_actual": Math.round(Math.random()*100)/100
         }
     }
 }
