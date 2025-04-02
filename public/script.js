@@ -275,7 +275,7 @@ const reporte_fields = {
     "potencia_circuito": {
         "label": "Potencia del circuito [kW]"
     },
-    "potencia_en_el_eje_w": {
+    "potencia_en_eje_w": {
         "label": "Potencia en el eje [W]"
     },
     "fp_actual": {
