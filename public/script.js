@@ -1,3 +1,20 @@
+const defaults = {
+    "potencia": 5000,
+    "tension_nominal": 13200,
+    "factor_potencia_actual": 0.9,
+    "factor_potencia_deseado": 0.95,
+    "frecuencia": 50
+}
+
+function loadDefaults() {
+    for(const [key, value] of Object.entries(defaults)) {
+        const field = document.querySelector(`#formulario_calculo_compensacion .form-group input[name="${key}"]`)
+        if(field) {
+            field.value = value
+        }
+    }
+}
+
 const form_groups = {
     "potencia_en_eje": {
         "type": "multiple",
@@ -348,6 +365,7 @@ function simularCapacitor() {
     const valor_capacitor = parseFloat(document.querySelector(`input[name="capacitor"]`).value)
     
     const params_capacitor = simulaCapacitor(params, params_reporte, valor_capacitor)
+    console.log({params:params,params_reporte:params_reporte,params_capacitor:params_capacitor})
 
     document.getElementById('formulario_capacitor').innerHTML =`
         ${Object.entries(params_capacitor).map(([key, value]) => {
@@ -368,35 +386,37 @@ function calculaReporte(params) {
     // TODO
     if(params.formulario == "motores_trifasicos") {
         return {
-            "potencia_en_eje": Math.round(Math.random()*1000000)/10000,
-            "s_sin_compensar": Math.round(Math.random()*10000)/100,
-            "q_sin_compensar": Math.round(Math.random()*10000)/100,
-            "potencia_circuito": Math.round(Math.random()*10000)/100
+            "potencia_en_eje": null,
+            "s_sin_compensar": null,
+            "q_sin_compensar": null,
+            "potencia_circuito": null
         }
     } else if(params.formulario == "motores_monofasicos") {
         return {
-            "potencia_en_eje_w": Math.round(Math.random()*1000000)/10000,
-            "s_sin_compensar": Math.round(Math.random()*10000)/100,
-            "q_sin_compensar": Math.round(Math.random()*10000)/100,
-            "fp_actual": Math.round(Math.random()*100)/100
+            "potencia_en_eje_w": null,
+            "s_sin_compensar": null,
+            "q_sin_compensar": null,
+            "fp_actual": null
         }
     } else if(params.formulario == "trifasico_general_fp_actual") {
+        const s_sin_compensar = params.potencia / params.factor_potencia_actual
+        const q_sin_compensar = (s_sin_compensar ** 2 - params.potencia ** 2) ** 0.5
         return {
-            "s_sin_compensar": Math.round(Math.random()*10000)/100,
-            "q_sin_compensar": Math.round(Math.random()*10000)/100,
-            "potencia_circuito": Math.round(Math.random()*10000)/100
+            "s_sin_compensar": s_sin_compensar,
+            "q_sin_compensar": q_sin_compensar,
+            "potencia_circuito": null
         }
     } else if(params.formulario == "monofasico_general") {
         return {
-            "s_sin_compensar": Math.round(Math.random()*10000)/100,
-            "q_sin_compensar": Math.round(Math.random()*10000)/100,
-            "corriente_circuito": Math.round(Math.random()*10000)/100
+            "s_sin_compensar": null,
+            "q_sin_compensar": null,
+            "corriente_circuito": null
         }
     } else if(params.formulario == "trifasico_general_corriente") {
         return {
-            "s_sin_compensar": Math.round(Math.random()*10000)/100,
-            "q_sin_compensar": Math.round(Math.random()*10000)/100,
-            "fp_actual": Math.round(Math.random()*100)/100
+            "s_sin_compensar": null,
+            "q_sin_compensar": null,
+            "fp_actual": null
         }
     } else {
         throw new Error("Invalid params.formulario: not found")
@@ -404,53 +424,83 @@ function calculaReporte(params) {
 }
 
 function calculaCapacitor(params, params_reporte, modo_de_calculo) {
+    if(params.formulario == "trifasico_general_fp_actual") {
+        const potencia_reactiva_kvar = calculaCapacitorKVAr(
+            params.potencia, 
+            params.factor_potencia_actual,
+            params.factor_potencia_deseado
+        )
+        return calculaCapacitorMicroFarads(
+            potencia_reactiva_kvar,
+            params.tension_nominal,
+            params.frecuencia            
+        )
+    }
     // TODO
-    return Math.round(Math.random()*100000)/100
+    return null
+}
+
+function calculaCapacitorMicroFarads(
+    potencia_reactiva_kvar,             // KVAr
+    tension_nominal,                    // V
+    frecuencia)                         // Hertz 
+    {
+        return potencia_reactiva_kvar / (2 * Math.PI * frecuencia * tension_nominal **2) * 1000 * 1000 * 1000
+    }
+
+function calculaCapacitorKVAr(
+    potencia,                           // KW
+    factor_potencia_actual,             
+    factor_potencia_deseado) {
+        return potencia * (Math.tan(Math.acos(factor_potencia_actual))-(Math.tan(Math.acos(factor_potencia_deseado))))
+
 }
 
 function simulaCapacitor(params, params_reporte, valor_capacitor) {
     // TODO
     if(params.formulario=="motores_trifasicos") {
         return {
-            "corriente_capacitor": Math.round(Math.random()*10000)/100,
-            "q_compensada": Math.round(Math.random()*10000)/100,
-            "s_compensada": Math.round(Math.random()*10000)/100,
-            "corriente_compensada": Math.round(Math.random()*10000)/100,
-            "fp_compensado": Math.round(Math.random()*100)/100
+            "corriente_capacitor": null,
+            "q_compensada": null,
+            "s_compensada": null,
+            "corriente_compensada": null,
+            "fp_compensado": null
         }
     } else if(params.formulario=="motores_monofasicos") {
         return {
-            "q_capacitiva_capacitor": Math.round(Math.random()*10000)/100, 
-            "corriente_capacitor": Math.round(Math.random()*10000)/100,
-            "q_compensada": Math.round(Math.random()*10000)/100,
-            "s_compensada": Math.round(Math.random()*10000)/100,
-            "corriente_compensada": Math.round(Math.random()*10000)/100,
-            "fp_compensado": Math.round(Math.random()*100)/100
+            "q_capacitiva_capacitor": null, 
+            "corriente_capacitor": null,
+            "q_compensada": null,
+            "s_compensada": null,
+            "corriente_compensada": null,
+            "fp_compensado": null
         }
     } else if(params.formulario=="trifasico_general_fp_actual") {
+        const s_compensada = params.potencia / params.factor_potencia_deseado
+        const q_compensada = Math.sqrt(s_compensada ** 2 - params.potencia ** 2)
         return {
-            "corriente_capacitor": Math.round(Math.random()*10000)/100,
-            "q_compensada": Math.round(Math.random()*10000)/100,
-            "s_compensada": Math.round(Math.random()*10000)/100,
-            "corriente_compensada": Math.round(Math.random()*10000)/100,
-            "fp_compensado": Math.round(Math.random()*100)/100
+            "corriente_capacitor": 2 * Math.PI * params.frecuencia * params.tension_nominal * 10**-6 * valor_capacitor * (1 / Math.sqrt(3)),
+            "q_compensada": q_compensada,
+            "s_compensada": s_compensada,
+            "corriente_compensada": s_compensada * 1000 / (Math.sqrt(3) * params.tension_nominal),
+            "fp_compensado": params.potencia / Math.sqrt(params.potencia ** 2 + q_compensada ** 2)
         }
     } else if(params.formulario=="monofasico_general") {
         return {
-            "q_capacitiva_capacitor": Math.round(Math.random()*10000)/100, 
-            "corriente_capacitor": Math.round(Math.random()*10000)/100,
-            "q_compensada": Math.round(Math.random()*10000)/100,
-            "s_compensada": Math.round(Math.random()*10000)/100,
-            "corriente_compensada": Math.round(Math.random()*10000)/100,
-            "fp_compensado": Math.round(Math.random()*100)/100
+            "q_capacitiva_capacitor": null, 
+            "corriente_capacitor": null,
+            "q_compensada": null,
+            "s_compensada": null,
+            "corriente_compensada": null,
+            "fp_compensado": null
         }
     } else if(params.formulario=="trifasico_general_corriente") {
         return {
-            "corriente_capacitor": Math.round(Math.random()*10000)/100,
-            "q_compensada": Math.round(Math.random()*10000)/100,
-            "s_compensada": Math.round(Math.random()*10000)/100,
-            "corriente_compensada": Math.round(Math.random()*10000)/100,
-            "fp_compensado": Math.round(Math.random()*100)/100
+            "corriente_capacitor": null,
+            "q_compensada": null,
+            "s_compensada": null,
+            "corriente_compensada": null,
+            "fp_compensado": null
         }
     } else {
         throw new Error("Invalid params.formulario: not found")
