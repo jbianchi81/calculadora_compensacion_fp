@@ -38,7 +38,7 @@ const form_groups = {
             {
                 "type": "input",
                 "name": "potencia_en_eje",
-                "data_type": "decimal"
+                "data_type": "number"
             }
         ]
     },
@@ -46,7 +46,7 @@ const form_groups = {
         "type": "input",
         "name": "tension_nominal",
         "label": "Tensión nominal [V]",
-        "data_type": "decimal"
+        "data_type": "number"
     },
     "corriente_nominal": {
         "type": "input",
@@ -59,20 +59,22 @@ const form_groups = {
         "name": "factor_potencia_deseado",
         "label": "Factor de potencia deseado",
         "data_type": "decimal",
-        "placeholder": "_.__"
+        "placeholder": "_.__",
+        "max": 1
     },
     "frecuencia": {
         "type": "input",
         "name": "frecuencia",
         "label": "Frecuencia [Hz]",
-        "data_type": "number"
+        "data_type": "integer"
     },
     "factor_potencia_actual": {
         "type": "input",
         "name": "factor_potencia_actual",
         "label": "Factor de potencia actual",
         "data_type": "decimal",
-        "placeholder": "_.__"
+        "placeholder": "_.__",
+        "max": 1
     },
     "modo_de_calculo": {
         "type": "select",
@@ -97,7 +99,7 @@ const form_groups = {
         "type": "input",
         "name": "potencia",
         "label": "Potencia [KW]",
-        "data_type": "decimal"
+        "data_type": "number"
     },
     "potencia_w": {
         "type": "input",
@@ -124,7 +126,8 @@ const forms = {
             form_groups["frecuencia"],
             form_groups["factor_potencia_actual"]
         ],
-        "result_label": "Capacitor p/cos&phi; deseado [KVAr]:"
+        "result_label": "Capacitor p/cos&phi; deseado [KVAr]:",
+        "data_unit": "kvar"
     },
     "motores_monofasicos": {
         "title": "Cálculo de Motores Monofásicos",
@@ -136,7 +139,8 @@ const forms = {
             form_groups["frecuencia"],
             form_groups["modo_de_calculo"]
         ],
-        "result_label": "Potencia recomendada [KVAr]"
+        "result_label": "Potencia recomendada [KVAr]",
+        "data_unit": "kvar"
     },
     "trifasico_general_fp_actual": {
         "title": "Cálculo Trifásico General",
@@ -147,7 +151,8 @@ const forms = {
             form_groups["factor_potencia_deseado"],
             form_groups["frecuencia"]
         ],
-        "result_label": "Capacitor p/cos&phi; deseado [KVAr]:"
+        "result_label": "Capacitor p/cos&phi; deseado [KVAr]:",
+        "data_unit": "kvar"
     },
     "monofasico_general": {
         "title": "Cálculo Monofásico General",
@@ -159,7 +164,8 @@ const forms = {
             form_groups["frecuencia"],
             form_groups["modo_de_calculo"]
         ],
-        "result_label": "Potencia recomendada [KVAr]"
+        "result_label": "Potencia recomendada [KVAr]",
+        "data_unit": "kvar"
     },
     "trifasico_general_corriente": {
         "title": "Cálculo Trifásico General",
@@ -170,7 +176,8 @@ const forms = {
             form_groups["factor_potencia_deseado"],
             form_groups["frecuencia"]
         ],
-        "result_label": "Capacitor p/cos&phi; deseado [KVAr]:"
+        "result_label": "Capacitor p/cos&phi; deseado [KVAr]:",
+        "data_unit": "kvar"
     }
 };
 
@@ -207,7 +214,7 @@ function loadContent(contentId) {
                             <button type="button" onclick="generaReporte()">Reporte</button>
                         </div>
                         <label for="capacitor">${form.result_label}</label>
-                        <input disabled name="capacitor">
+                        <input disabled name="capacitor" ${(form.data_unit) ? `data-unit="${form.data_unit}"`: ""}>
                         <div class="form-group">
                             <button type="button" id="simular" onclick="simularCapacitor()" disabled>Simular</button>
                             <button type="button" id="calcular" onclick="calcularCapacitor()" disabled>Calcular</button>
@@ -223,6 +230,31 @@ function loadContent(contentId) {
             </div>
         </div>
     `
+    const numberInputs = document.querySelectorAll('form#formulario_calculo_compensacion input[type=number]')
+    numberInputs.forEach(input=>{
+        // Prevent non-integer keys
+        input.addEventListener('keydown', (e) => {
+            const allowedKeys = ['Backspace', 'Tab', 'Delete', 'ArrowLeft', 'ArrowRight'];
+            if (allowedKeys.includes(e.key)) return;
+    
+            if (!/^(\d|\.)$/.test(e.key)) {
+                e.preventDefault();
+            }
+        });
+    
+        // Block invalid paste
+        input.addEventListener('paste', (e) => {
+            const pasted = e.clipboardData.getData('text');
+            if (!/^\d+(\.\d*)?$/.test(pasted)) {
+                e.preventDefault();
+            }
+        });
+    
+        // Optional: clean up on blur
+        // input.addEventListener('blur', () => {
+        //     input.value = input.value.replace(/\D/g, '');
+        // });
+    })
 }
 
 function renderFormGroup(form_group) {
@@ -256,7 +288,7 @@ function renderField(field) {
             })}
         </select>`
     } else {
-        var attrs = (field.data_type=="decimal") ? `min="0" step="0.01"` : `min="0"`
+        var attrs = (field.data_type=="decimal") ? `min="0" step="0.01" inputmode="decimal"` : `min="0"`
         if(field.placeholder) {
             attrs = `${attrs} placeholder="${field.placeholder}"`
         }
@@ -270,6 +302,9 @@ function renderField(field) {
             attrs = `${attrs} disabled`
         } else {
             attrs = `${attrs} required`
+        }
+        if(field.max) {
+            attrs = `${attrs} max="${field.max}"`
         }
         return `<input type="number" name="${field.name}" ${attrs}>`
     }
@@ -288,6 +323,14 @@ function parseFormData(element_id) {
 }
 
 function generaReporte() {
+    const elements = document.getElementById('formulario_calculo_compensacion').querySelectorAll('[required]');
+    for (let el of elements) {
+        const is_valid = el.reportValidity(); // shows the browser's validation message
+        if(!is_valid) {
+            el.focus(); // focuses on the invalid field
+            return; // stop further execution (don't submit)
+        }
+    }
     const params = parseFormData('formulario_calculo_compensacion')
     // alert(JSON.stringify(formObject,null,2));
     const reporte = calculaReporte(params)
@@ -331,9 +374,9 @@ const reporte_fields = {
 function calcularCapacitor() {
     const params = parseFormData('formulario_calculo_compensacion')
     const params_reporte = parseFormData('formulario_reporte')
-    const modo_de_calculo = (params.modo_de_calculo) ? params.modo_de_calculo : "capacidad"
+    const modo_de_calculo = (params.modo_de_calculo) ? params.modo_de_calculo : (params.formulario == "trifasico_general_fp_actual") ? "potencia" : "capacidad"
 
-    document.querySelector('label[for=capacitor]').innerHTML = (modo_de_calculo == "capacidad") ? "Capacitor recomendado [&mu;F]:" : "Potencia recomendada [KVAr]"
+    // document.querySelector('label[for=capacitor]').innerHTML = (modo_de_calculo == "capacidad") ? "Capacitor recomendado [&mu;F]:" : "Potencia recomendada [KVAr]"
     document.querySelector('input[name=capacitor]').value = calculaCapacitor(params,params_reporte, modo_de_calculo)
     document.getElementById("simular").disabled = false
 }
@@ -363,8 +406,9 @@ function simularCapacitor() {
     const params = parseFormData('formulario_calculo_compensacion')
     const params_reporte = parseFormData('formulario_reporte')
     const valor_capacitor = parseFloat(document.querySelector(`input[name="capacitor"]`).value)
+    const unidades = document.querySelector(`input[name="capacitor"]`).dataset.unit
     
-    const params_capacitor = simulaCapacitor(params, params_reporte, valor_capacitor)
+    const params_capacitor = simulaCapacitor(params, params_reporte, valor_capacitor, unidades)
     console.log({params:params,params_reporte:params_reporte,params_capacitor:params_capacitor})
 
     document.getElementById('formulario_capacitor').innerHTML =`
@@ -399,8 +443,8 @@ function calculaReporte(params) {
             "fp_actual": null
         }
     } else if(params.formulario == "trifasico_general_fp_actual") {
-        const s_sin_compensar = params.potencia / params.factor_potencia_actual
-        const q_sin_compensar = (s_sin_compensar ** 2 - params.potencia ** 2) ** 0.5
+        const s_sin_compensar = roundTo(params.potencia / params.factor_potencia_actual, 2)
+        const q_sin_compensar = roundTo((s_sin_compensar ** 2 - params.potencia ** 2) ** 0.5, 2)
         return {
             "s_sin_compensar": s_sin_compensar,
             "q_sin_compensar": q_sin_compensar,
@@ -424,12 +468,14 @@ function calculaReporte(params) {
 }
 
 function calculaCapacitor(params, params_reporte, modo_de_calculo) {
-    if(params.formulario == "trifasico_general_fp_actual") {
-        const potencia_reactiva_kvar = calculaCapacitorKVAr(
-            params.potencia, 
-            params.factor_potencia_actual,
-            params.factor_potencia_deseado
-        )
+    const potencia_reactiva_kvar = calculaCapacitorKVAr(
+        params.potencia, 
+        params.factor_potencia_actual,
+        params.factor_potencia_deseado
+    )
+    if(modo_de_calculo == "potencia") {
+        return roundTo(potencia_reactiva_kvar,2)
+    } else {
         return calculaCapacitorMicroFarads(
             potencia_reactiva_kvar,
             params.tension_nominal,
@@ -437,7 +483,6 @@ function calculaCapacitor(params, params_reporte, modo_de_calculo) {
         )
     }
     // TODO
-    return null
 }
 
 function calculaCapacitorMicroFarads(
@@ -445,7 +490,7 @@ function calculaCapacitorMicroFarads(
     tension_nominal,                    // V
     frecuencia)                         // Hertz 
     {
-        return potencia_reactiva_kvar / (2 * Math.PI * frecuencia * tension_nominal **2) * 1000 * 1000 * 1000
+        return roundTo(potencia_reactiva_kvar / (2 * Math.PI * frecuencia * tension_nominal **2) * 1000 * 1000 * 1000, 2)
     }
 
 function calculaCapacitorKVAr(
@@ -456,7 +501,7 @@ function calculaCapacitorKVAr(
 
 }
 
-function simulaCapacitor(params, params_reporte, valor_capacitor) {
+function simulaCapacitor(params, params_reporte, valor_capacitor, unidades="kvar") {
     // TODO
     if(params.formulario=="motores_trifasicos") {
         return {
@@ -478,12 +523,13 @@ function simulaCapacitor(params, params_reporte, valor_capacitor) {
     } else if(params.formulario=="trifasico_general_fp_actual") {
         const s_compensada = params.potencia / params.factor_potencia_deseado
         const q_compensada = Math.sqrt(s_compensada ** 2 - params.potencia ** 2)
+        const corriente_capacitor = (unidades == "kvar") ? valor_capacitor / params.tension_nominal * 10**3 * (1/Math.sqrt(3)) : 2 * Math.PI * params.frecuencia * params.tension_nominal * 10**-6 * valor_capacitor * (1 / Math.sqrt(3))
         return {
-            "corriente_capacitor": 2 * Math.PI * params.frecuencia * params.tension_nominal * 10**-6 * valor_capacitor * (1 / Math.sqrt(3)),
-            "q_compensada": q_compensada,
-            "s_compensada": s_compensada,
-            "corriente_compensada": s_compensada * 1000 / (Math.sqrt(3) * params.tension_nominal),
-            "fp_compensado": params.potencia / Math.sqrt(params.potencia ** 2 + q_compensada ** 2)
+            "corriente_capacitor": roundTo(corriente_capacitor, 2),
+            "q_compensada": roundTo(q_compensada, 2),
+            "s_compensada": roundTo(s_compensada, 2),
+            "corriente_compensada": roundTo(s_compensada * 1000 / (Math.sqrt(3) * params.tension_nominal), 2),
+            "fp_compensado": roundTo(params.potencia / Math.sqrt(params.potencia ** 2 + q_compensada ** 2), 2)
         }
     } else if(params.formulario=="monofasico_general") {
         return {
@@ -506,3 +552,8 @@ function simulaCapacitor(params, params_reporte, valor_capacitor) {
         throw new Error("Invalid params.formulario: not found")
     }
 }
+
+function roundTo(value, decimals = 2) {
+    return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+}
+  

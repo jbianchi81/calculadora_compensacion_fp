@@ -4,9 +4,129 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Calculadora de compensación de potencia</title>
-        <link rel="stylesheet" href="style.css">
+        <!-- <link rel="stylesheet" href="style.css"> -->
     </head>
     <body>
+        <style>
+            .form-group {
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+            .form-group label {
+                width: 250px; /* Fixed width for labels */
+                text-align: right;
+                margin-right: 10px;
+            }
+            .form-group button {
+                width: 250px;
+            }
+            .form-group input, .form-group select {
+                flex: 1; /* Inputs take remaining space */
+                max-width: 100px;
+            }
+            .container {
+                max-width: 1050px;
+                margin: auto;
+            }
+
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+            }
+
+            nav {
+                background: #333;
+                padding: 10px;
+            }
+
+            .nav {
+                list-style: none;
+                padding: 0;
+                display: flex;
+            }
+
+            .nav > li {
+                position: relative;
+                margin-right: 20px;
+            }
+
+            .nav > li > a {
+                color: white;
+                text-decoration: none;
+                padding: 10px;
+                display: block;
+            }
+
+            .sub-menu {
+                display: none;
+                position: absolute;
+                background: #444;
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                top: 100%;
+                left: 0;
+                min-width: 150px;
+            }
+
+            .sub-menu li {
+                margin: 0;
+            }
+
+            .sub-menu li a {
+                color: white;
+                text-decoration: none;
+                padding: 10px;
+                display: block;
+            }
+
+            .sub-menu li a:hover {
+                background: #555;
+            }
+
+            .show {
+                display: block;
+            }
+
+            #content {
+                margin-top: 20px;
+                padding: 20px;
+                border: 1px solid #ccc;
+            }
+
+            .block_container {
+                display: flex;
+                flex-wrap: wrap;
+                /* gap: 10px; */
+                justify-content: center; /* Centers blocks when wrapping */
+                /* padding: 10px; */
+            }
+
+            .block {
+                width: 30%; /* Each block takes 30% of the container width */
+                min-width: 350px; /* Prevents blocks from getting too small */
+                /* height: 150px; */
+                /* background: lightblue; */
+                /* display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem; */
+                /* border: 2px solid navy; */
+            }
+
+            .report input[type="number"]::-webkit-outer-spin-button,
+            .report input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            .report input[type="number"] {
+                -moz-appearance: textfield;
+            }
+
+        </style>
+        <script src="script.js"></script>
         <nav>
             <ul class="nav">
                 <li>
@@ -31,6 +151,5 @@
             <h2>Bienvenido</h2>
             <p>Por favor, seleccione una opción de la barra de navegación</p>
         </div>
-        <script src="script.js"></script>
     </body>
 </html>
