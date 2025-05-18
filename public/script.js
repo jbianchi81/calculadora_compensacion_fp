@@ -112,6 +112,12 @@ const form_groups = {
         "name": "corriente_circuito",
         "label": "Corriente del circuito [A]",
         "data_type": "decimal"
+    },
+    "energia_reactiva_mensual": {
+        "type": "input",
+        "name": "energia_reactiva_mensual",
+        "label": "Energía reactiva mensual",
+        "data_type": "number"
     }
 }
 
@@ -178,6 +184,21 @@ const forms = {
         ],
         "result_label": "Capacitor p/cos&phi; deseado [KVAr]:",
         "data_unit": "kvar"
+    },
+    "trifasico_general_energia_reactiva": {
+        "title": "Cálculo Trifásico General por Energía Reactiva Mensual",
+        "fields": [
+            form_groups["energia_reactiva_mensual"],
+            form_groups["tension_nominal"],
+            form_groups["frecuencia"]
+        ],
+        "defaults": {
+            tension_nominal: 380,
+            frecuencia: 50
+        },
+        "result_label": "Capacitor deseado [&mu;F]:",
+        "data_unit": "&mu;F",
+        
     }
 };
 
@@ -200,6 +221,7 @@ function loadContent(contentId) {
         throw("Invalid contentId, form not found")
     }
     const form = forms[contentId]
+    form.defaults = form.defaults || {}
 
     document.getElementById("content").innerHTML = `
         <div class="container">
@@ -208,7 +230,7 @@ function loadContent(contentId) {
                 <div class="block">
                     <form id="formulario_calculo_compensacion">
                         <input name="formulario" hidden value="${contentId}">
-                        ${form.fields.map(field=>renderFormGroup(field)).join("\n")}
+                        ${form.fields.map(field=>renderFormGroup(field, form.defaults[field.name])).join("\n")}
                         <div class="form-group">
                             <label></label>
                             <button type="button" onclick="generaReporte()">Reporte</button>
@@ -257,21 +279,21 @@ function loadContent(contentId) {
     })
 }
 
-function renderFormGroup(form_group) {
+function renderFormGroup(form_group, default_value) {
     if(form_group.type == "multiple") {
         return `<div class="form-group">
             <label for="${form_group.name}">${form_group.label}</label>
-            ${form_group.fields.map(field=>renderField(field)).join("\n")}
+            ${form_group.fields.map(field=>renderField(field, default_value)).join("\n")}
         </div>`
     } else {
         return `<div class="form-group">
             <label for="${form_group.name}">${form_group.label}</label>
-            ${renderField(form_group)}
+            ${renderField(form_group, default_value)}
         </div>`
     }
 }
 
-function renderField(field) {
+function renderField(field, default_value) {
     if(field.type=="select") {
         var attrs = ""
         if (field.id) {
@@ -283,7 +305,7 @@ function renderField(field) {
         }
         return `<select name="${field.name}" ${attrs}>
             ${field.options.map(option=> {
-                const selected = (field.value && field.value == option.value) ? " selected" : ""
+                const selected = (default_value != null) ? (default_value == option.value) ? " selected" : "" : (field.value && field.value == option.value) ? " selected" : ""
                 return `<option value="${option.value}"${selected}>${option.text}</option>`
             })}
         </select>`
@@ -292,7 +314,10 @@ function renderField(field) {
         if(field.placeholder) {
             attrs = `${attrs} placeholder="${field.placeholder}"`
         }
-        if(field.value) {
+        if(default_value != null) {
+            attrs = `${attrs} value="${default_value}"`
+        }
+        else if(field.value != null) {
             attrs = `${attrs} value="${field.value}"`
         }
         if(field.id) {
@@ -374,10 +399,10 @@ const reporte_fields = {
 function calcularCapacitor() {
     const params = parseFormData('formulario_calculo_compensacion')
     const params_reporte = parseFormData('formulario_reporte')
-    const modo_de_calculo = (params.modo_de_calculo) ? params.modo_de_calculo : (params.formulario == "trifasico_general_fp_actual") ? "potencia" : "capacidad"
-
+    const modo_de_calculo = (params.modo_de_calculo) ? params.modo_de_calculo : (params.formulario == "trifasico_general_fp_actual") ? (params.formulario == "trifasico_general_energia_reactiva") ? "capacidad" : "potencia" : "capacidad"
+    const trifasico = (/^trifasico_/.test(params.formulario)) ? true : false
     // document.querySelector('label[for=capacitor]').innerHTML = (modo_de_calculo == "capacidad") ? "Capacitor recomendado [&mu;F]:" : "Potencia recomendada [KVAr]"
-    document.querySelector('input[name=capacitor]').value = calculaCapacitor(params,params_reporte, modo_de_calculo)
+    document.querySelector('input[name=capacitor]').value = calculaCapacitor(params,params_reporte, modo_de_calculo,trifasico)
     document.getElementById("simular").disabled = false
 }
 
@@ -462,24 +487,35 @@ function calculaReporte(params) {
             "q_sin_compensar": null,
             "fp_actual": null
         }
+    } else if(params.formulario == "trifasico_general_energia_reactiva") {
+        return {
+            "s_sin_compensar": null,
+            "q_sin_compensar": params.energia_reactiva_mensual / 720,
+            "fp_actual": null
+        }
     } else {
         throw new Error("Invalid params.formulario: not found")
     }
 }
 
-function calculaCapacitor(params, params_reporte, modo_de_calculo) {
-    const potencia_reactiva_kvar = calculaCapacitorKVAr(
-        params.potencia, 
-        params.factor_potencia_actual,
-        params.factor_potencia_deseado
-    )
+function calculaCapacitor(params, params_reporte, modo_de_calculo, trifasico) {
+    if(params.potencia == null && params.energia_reactiva_mensual) {
+        var potencia_reactiva_kvar = params.energia_reactiva_mensual / 720
+    } else {
+        var potencia_reactiva_kvar = calculaCapacitorKVAr(
+            params.potencia, 
+            params.factor_potencia_actual,
+            params.factor_potencia_deseado
+        )
+    }
     if(modo_de_calculo == "potencia") {
         return roundTo(potencia_reactiva_kvar,2)
     } else {
         return calculaCapacitorMicroFarads(
             potencia_reactiva_kvar,
             params.tension_nominal,
-            params.frecuencia            
+            params.frecuencia,
+            trifasico            
         )
     }
     // TODO
@@ -488,9 +524,10 @@ function calculaCapacitor(params, params_reporte, modo_de_calculo) {
 function calculaCapacitorMicroFarads(
     potencia_reactiva_kvar,             // KVAr
     tension_nominal,                    // V
-    frecuencia)                         // Hertz 
+    frecuencia,                         // Hertz
+    trifasico)                          // bool
     {
-        return roundTo(potencia_reactiva_kvar / (2 * Math.PI * frecuencia * tension_nominal **2) * 1000 * 1000 * 1000, 2)
+        return roundTo(potencia_reactiva_kvar / (((trifasico) ? 3 : 1) * 2 * Math.PI * frecuencia * tension_nominal **2) * 1000 * 1000 * 1000, 2)
     }
 
 function calculaCapacitorKVAr(
@@ -547,6 +584,10 @@ function simulaCapacitor(params, params_reporte, valor_capacitor, unidades="kvar
             "s_compensada": null,
             "corriente_compensada": null,
             "fp_compensado": null
+        }
+    } else if(params.formulario=="trifasico_general_energia_reactiva") {
+        return {
+            "q_compensada": 0
         }
     } else {
         throw new Error("Invalid params.formulario: not found")
